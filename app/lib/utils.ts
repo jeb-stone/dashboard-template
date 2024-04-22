@@ -1,4 +1,42 @@
-import { Revenue } from './definitions';
+import { 
+  Revenue,
+  RecordEntryFormProps,
+  TrialIdStructure,
+} from './definitions';
+
+export const transformTrialData = ({trialData}: RecordEntryFormProps): TrialIdStructure => {
+  const formattedTrialData: TrialIdStructure = {};
+
+  for (const entry of trialData) {
+    if (!formattedTrialData[entry.exp_trialid]){
+      formattedTrialData[entry.exp_trialid] = {}
+    }
+    formattedTrialData[entry.exp_trialid][entry.exp_ratetype] = {
+      id: entry.rates2id,
+      rate: entry.r_rate,
+      category: entry.exp_ratetypecat
+    }
+  }
+  return formattedTrialData;
+}
+
+export const createRecordID = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date. getMonth();
+  const day = date.getDate();
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  const second = date.getSeconds();
+
+  return [
+    year, 
+    (month < 10 ? '0' : '') + month,
+    (day < 10 ? '0' : '') + day,
+    (hour < 10 ? '0' : '') + hour,
+    (minute < 10 ? '0' : '') + minute,
+    (second < 10 ? '0' : '') + second
+  ].join('')
+}
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {

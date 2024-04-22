@@ -1,4 +1,7 @@
+'use server'
+
 import { sql } from '@vercel/postgres';
+
 import {
   CustomerField,
   CustomersTableType,
@@ -7,9 +10,110 @@ import {
   LatestInvoiceRaw,
   User,
   Revenue,
+  Database,
+  SubmittedRow, 
+  AirtableRecords
 } from './definitions';
 import { formatCurrency } from './utils';
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto';
 
+
+
+function getEnvVariable(key: string): string {
+  const value = process.env[key];
+  console.log({key})
+  if(!value) throw new Error(`Environmental variable, ${key} is not set!`);
+  return value;
+}
+                                  
+const supabaseKey = process.env.SUPABASE_KEY!//getEnvVariable('SUPABASE_KEY');
+const supabaseUrl = process.env.SUPABASE_URL!//getEnvVariable('SUPABASE_URL');
+const testEmail = process.env.TEST_EMAIL || 'test@email.com'
+// Create a single supabase client for interacting with your database
+const supabase = createClient(supabaseUrl, supabaseKey)
+//export default supabase;
+
+export async function fetchTrialData(id: string) {
+  try {
+    
+    const { data, error } = await supabase
+    .from('at_reader_rates')
+    .select()
+    .eq('e_mail', id || testEmail);
+    //console.log(`fetchTrialData results:`, {data})
+    return data;
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+// export async function postRecordToSupabase (supabaseRow: SubmittedRow) {
+//   try {
+//     const { data, error } = await supabase
+//       .from('submitted_dummy')
+//       .insert([
+//         supabaseRow,
+//       ])
+//       .select()
+//   } catch (error) {
+//     console.error(`Error posting to supabase: ${error}`)
+//   }
+// }
+
+export const postRecordToSupabase = async (record: SubmittedRow) => {
+  try {
+    console.log(`in data.ts posting to supabase`)
+    const response = await fetch('/api', {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(record)
+    });
+    if (response) {
+      const data = await response.json();
+      console.log('Response from POST req from frontend: ', data)
+    }
+
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function postRecordToAirtable (records: AirtableRecords) {
+  try {
+    records[0].fields.TsRecordID = randomUUID()
+    console.log(`posting record to airtable: ${JSON.stringify(records[0].fields)}`)
+    const response = await fetch('/api/airtable', {
+      method: 'POST', 
+      headers: {
+        "Content-Type" : "application/json"
+      },
+      body: JSON.stringify( records )
+    })
+    console.log({response})
+
+  } catch (error) {
+    console.error(`Error posting to Airtable: ${error}`)
+  }  
+}
+export async function submitRecordsToSupabase() {
+  try {
+    
+  } catch (error) {
+    console.error(`Error posting to supabase: ${error}`)
+  }
+}
+
+export async function submitToAirtable() {
+  try {
+    
+  } catch (error) {
+    console.error(`Error posting to Airtable: ${error}`)
+  }
+}
 export async function fetchRevenue() {
   // Add noStore() here to prevent the response from being cached.
   // This is equivalent to in fetch(..., {cache: 'no-store'}).
